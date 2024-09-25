@@ -34,13 +34,10 @@ def get_patch_params(n: int):
         For example, if a patch start in (0, 0) and patch_gap=4, the next patches will start at (4, 0) and (0, 4)
 
     """
-    if n <= 100:
-        patch_size = 5
-        patch_gap = 1
-    else:
-        patch_size = np.floor(n / 15).astype(int)
-        m = min(n**2, 10000)
-        patch_gap = np.ceil((n-patch_size)/(np.sqrt(m)-1)).astype(int)
+    patch_ratio = 15  # Aiming for number of patches in a row/column to be n / patch_ratio
+    patch_size = np.max([1, n // patch_ratio])
+    m = np.min([n**2, 10000])  # Number of total patches to aim for
+    patch_gap = np.ceil((n-patch_size)/(np.sqrt(m)-1)).astype(int)
     indices = range(0, n-patch_size+1, patch_gap)
     # Patch size adjustment to ensure the whole image is extracted
     if indices[-1] + patch_size < n:
@@ -48,7 +45,7 @@ def get_patch_params(n: int):
     
     return patch_size, patch_gap
 
-def extract_patches(img_array, patch_size, patch_gap=1):
+def extract_patches(img_array, patch_size=None, patch_gap=1):
     """
     Extract patches from a square image. 
     
@@ -69,14 +66,19 @@ def extract_patches(img_array, patch_size, patch_gap=1):
     """
     patches = []
     n = img_array.shape[0]
-    k = patch_size
-    if patch_gap > k:
+
+    # Determine params if not specified
+    if not patch_size:
+        patch_size, patch_gap = get_patch_params(n)
+    # Check params
+    if patch_gap > patch_size:
         warnings.warn("When 'patch_gap' is larger than one of patch_size dimensions, the full image will not be extracted.")
     indices = range(0, n-patch_size+1, patch_gap)
     if indices[-1] + patch_size < n:
         warnings.warn(f"Couldn't extract patches for the full image. Consider using 'patch_size[0]'={n-indices[-1]} or changing 'patch_gap'")
+    # Extract patches
     for i in indices:
         for j in indices:
-            patch = img_array[i:i + k, j:j + k]
+            patch = img_array[i:i + patch_size, j:j + patch_size]
             patches.append(patch)
     return np.array(patches)
