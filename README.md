@@ -36,12 +36,16 @@ The patch extraction process is a crucial step in the image segmentation pipelin
 5. These patches become the data points for the spectral clustering algorithm.
 
 The function `get_patch_params` in image_processing.py file can determine the patch dimensions (*patch_size*) and step size between patches (*patch_gap*). It ensures every pixel will be extracted to some patch and limits the total number of patches extracted (for computational reasons). 
-Denote $k$ as the *patch_size* so that each patch is of dimensions $\left(k,k\right)$ and denote $p$ as the *patch_gap*. The number of patches that will be extracted from an image of dimensions $\left(n,n\right)$ is
+#### `get_patch_params` behavior
+Let $k$ be the patch_size, defining patches of dimensions $(k,k)$, and $p$ be the patch_gap. For an image of dimensions $(n,n)$, the number of extracted patches is:
 ```math
-n\_patches=\left(\frac{n-k}{p}+1\right)^{2}
+n\_patches = \left(\frac{n-k}{p}+1\right)^2
 ```
-We try to aim for $n\\_patches$ to be $10000$ maximum. It is also needed to ensure $k\geq p$, otherwise some pixels will be skipped. Whenever $n>100$, the function
-
+We aim to keep $n\\_patches \leq 10000$ and ensure $k \geq p$ to avoid skipping pixels. The function sets $k = \max(1, \lfloor n/15 \rfloor)$ and adjusts $p$ accordingly. To target $m = \min(n^2, 10000)$ patches, we derive $p$ from:
+```math
+m = \left(\frac{n-k}{p}+1\right)^2 \Rightarrow p = \left\lceil \frac{n-k}{\sqrt{m}-1}\right\rceil
+```
+To ensure the last patch in each row/column aligns with the image edge, the function may further adjust $k$. This approach balances comprehensive coverage with computational efficiency, adapting to various image sizes while maintaining consistent patch extraction.
 ## Usage
 
 A demonstration usage can be seen in the notebook file.
